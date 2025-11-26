@@ -3,3 +3,6 @@ google-api-python-client
 google-generativeai
 streamlit
 watchdog
+streamlit-option-menu
+streamlit-shadcn-ui
+streamlit-extras
