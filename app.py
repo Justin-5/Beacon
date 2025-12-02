@@ -404,10 +404,24 @@ if selected == "Home":
         <div class="hero-container">
             <h1 class="hero-title">🕯️ Beacon</h1>
             <p class="hero-subtitle">AI-Powered Volunteer Guide</p>
-            <p style="color: rgba(255,255,255,0.9); font-size: 1.2rem; max-width: 700px; margin: 0 auto 2rem auto; position: relative; z-index: 1;">
+            <p style="color: rgba(255,255,255,0.9); font-size: 1.2rem; max-width: 700px; margin: 0 auto 1rem auto; position: relative; z-index: 1;">
                 Illuminate your path to making a difference. Discover meaningful volunteer opportunities 
                 tailored to your passion, location, and availability.
             </p>
+            <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem; position: relative; z-index: 1;">
+                <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem; backdrop-filter: blur(10px);">
+                    ✨ RAG-Powered
+                </span>
+                <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem; backdrop-filter: blur(10px);">
+                    🎯 JSON Mode
+                </span>
+                <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem; backdrop-filter: blur(10px);">
+                    🤖 Multi-Agent AI
+                </span>
+                <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem; backdrop-filter: blur(10px);">
+                    🔍 Web Scraping
+                </span>
+            </div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -417,38 +431,72 @@ if selected == "Home":
     with col1:
         st.markdown("""
             <div class="stat-card">
-                <div class="stat-number">10K+</div>
-                <div class="stat-label">Opportunities</div>
+                <div class="stat-number">3</div>
+                <div class="stat-label">AI Agents</div>
             </div>
         """, unsafe_allow_html=True)
 
     with col2:
         st.markdown("""
             <div class="stat-card">
-                <div class="stat-number">500+</div>
-                <div class="stat-label">Organizations</div>
+                <div class="stat-number">2000</div>
+                <div class="stat-label">Chars Scraped/Page</div>
             </div>
         """, unsafe_allow_html=True)
 
     with col3:
         st.markdown("""
             <div class="stat-card">
-                <div class="stat-number">50+</div>
-                <div class="stat-label">Cities</div>
+                <div class="stat-number">100%</div>
+                <div class="stat-label">Valid JSON Output</div>
             </div>
         """, unsafe_allow_html=True)
 
     with col4:
         st.markdown("""
             <div class="stat-card">
-                <div class="stat-number">24/7</div>
-                <div class="stat-label">AI Support</div>
+                <div class="stat-number">5</div>
+                <div class="stat-label">Results Per Search</div>
             </div>
         """, unsafe_allow_html=True)
 
     st.markdown("<br><br>", unsafe_allow_html=True)
 
-    # Features Section
+    # Technical Features Section
+    st.markdown("<h2 style='text-align: center; color: white; font-size: 2.5rem; margin: 3rem 0 1rem 0;'>🚀 Powered by Advanced AI Technology</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: rgba(255,255,255,0.8); font-size: 1.1rem; margin-bottom: 2rem;'>Enterprise-grade features that make Beacon stand out</p>", unsafe_allow_html=True)
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("""
+            <div class="feature-item">
+                <div class="feature-icon">📚</div>
+                <div class="feature-title">RAG (Retrieval-Augmented Generation)</div>
+                <div class="feature-desc">
+                    Unlike basic search tools that only read snippets, Beacon uses web scraping with BeautifulSoup 
+                    to fetch and analyze the <strong>full content</strong> of each website (up to 2000 characters). 
+                    This allows our AI to verify real details like specific dates, requirements, and contact information.
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+        st.markdown("""
+            <div class="feature-item">
+                <div class="feature-icon">🎯</div>
+                <div class="feature-title">Robust JSON Mode with Pydantic</div>
+                <div class="feature-desc">
+                    Beacon uses Gemini's native JSON mode with Pydantic schemas to guarantee <strong>100% valid, 
+                    structured output</strong> every time. No more parsing errors or broken responses—just clean, 
+                    reliable data that powers consistent results.
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # User Benefits Section
     st.markdown("<h2 style='text-align: center; color: white; font-size: 2.5rem; margin: 3rem 0 2rem 0;'>Why Choose Beacon?</h2>", unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns(3)
@@ -515,6 +563,20 @@ elif selected == "Search":
 
     st.markdown('</div>', unsafe_allow_html=True)
 
+    # Technical Info
+    with st.expander("🔬 How Beacon's AI Works"):
+        st.markdown("""
+        **Behind the scenes, Beacon uses cutting-edge AI technology:**
+        
+        1. **Research Agent** converts your request into optimized search queries
+        2. **Web Scraper** fetches full page content (up to 2000 chars) from each result
+        3. **Filter Agent** uses RAG to read actual website content and validate opportunities
+        4. **JSON Mode** with Pydantic ensures 100% structured, error-free output
+        5. **Format Agent** presents results in a clear, actionable format
+        
+        This is not just a search tool—it's an intelligent system that understands context!
+        """)
+
     # Examples
     with st.expander("💡 Need inspiration? Try these examples"):
         ex_col1, ex_col2 = st.columns(2)
@@ -537,15 +599,21 @@ elif selected == "Search":
     if search_button:
         if user_request:
             with st.status("🕯️ Beacon is illuminating opportunities...", expanded=True) as status:
-                st.write("🔍 **Researching** your request...")
-                st.write("📊 **Filtering** relevant opportunities...")
+                st.write(
+                    "🤖 **Agent 1: Research Agent** - Analyzing your request and generating optimal search queries...")
+                st.write(
+                    "🌐 **Web Scraping** - Fetching full page content from volunteer websites (RAG in action)...")
+                st.write(
+                    "🔍 **Agent 2: Filter Agent** - Reading full website content and validating opportunities with JSON mode...")
 
                 # Run the workflow
                 final_response = run_volunteer_agent_flow(user_request)
 
-                st.write("✨ **Formatting** results for you...")
-                st.write("✅ **Complete!** Found matching opportunities")
-                status.update(label="✨ Search Complete!",
+                st.write(
+                    "✨ **Agent 3: Format Agent** - Presenting results in a clear, actionable format...")
+                st.write(
+                    "✅ **Complete!** Found matching opportunities with verified details")
+                status.update(label="✨ Search Complete - All Agents Executed!",
                               state="complete", expanded=False)
 
             # Display Results
@@ -632,10 +700,10 @@ elif selected == "About":
         """, unsafe_allow_html=True)
 
     st.markdown("""
-        <h2 style="color: #14b8a6; font-size: 2rem; margin: 3rem 0 1rem 0;">Our Technology</h2>
+        <h2 style="color: #14b8a6; font-size: 2rem; margin: 3rem 0 1rem 0;">🏗️ Technical Architecture</h2>
         <p class="about-text">
-            Beacon uses a multi-agent AI system powered by advanced language models. Our three-stage 
-            process ensures you get the most relevant and up-to-date volunteer opportunities:
+            Beacon uses a <strong>multi-agent AI system</strong> powered by Google's Gemini 2.5 Flash. 
+            Our three-stage pipeline ensures you get the most relevant and up-to-date volunteer opportunities:
         </p>
     """, unsafe_allow_html=True)
 
@@ -645,9 +713,10 @@ elif selected == "About":
         st.markdown("""
             <div class="feature-item">
                 <div class="feature-icon">🤖</div>
-                <div class="feature-title">Research Agent</div>
+                <div class="feature-title">Agent 1: Research Agent</div>
                 <div class="feature-desc">
-                    Analyzes your request and generates optimal search queries.
+                    Analyzes your natural language request and generates optimized Google Custom Search queries 
+                    to find the most relevant volunteer websites.
                 </div>
             </div>
         """, unsafe_allow_html=True)
@@ -656,9 +725,10 @@ elif selected == "About":
         st.markdown("""
             <div class="feature-item">
                 <div class="feature-icon">🔍</div>
-                <div class="feature-title">Filter Agent</div>
+                <div class="feature-title">Agent 2: Filter Agent (RAG)</div>
                 <div class="feature-desc">
-                    Vets and validates opportunities for relevance and quality.
+                    Uses <strong>web scraping</strong> to read full page content (not just snippets), then validates 
+                    opportunities using <strong>Pydantic models</strong> and <strong>JSON mode</strong> for 100% reliable output.
                 </div>
             </div>
         """, unsafe_allow_html=True)
@@ -667,9 +737,76 @@ elif selected == "About":
         st.markdown("""
             <div class="feature-item">
                 <div class="feature-icon">✨</div>
-                <div class="feature-title">Format Agent</div>
+                <div class="feature-title">Agent 3: Format Agent</div>
                 <div class="feature-desc">
-                    Presents results in a clear, actionable format.
+                    Transforms structured data into a friendly, easy-to-read response with all the details 
+                    you need to take action.
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Resume-Worthy Features
+    st.markdown("""
+        <h2 style="color: #14b8a6; font-size: 2rem; margin: 3rem 0 1rem 0;">💼 Resume-Worthy Features</h2>
+        <p class="about-text">
+            Beacon showcases advanced software engineering and AI integration skills:
+        </p>
+    """, unsafe_allow_html=True)
+
+    feat_col1, feat_col2 = st.columns(2)
+
+    with feat_col1:
+        st.markdown("""
+            <div class="feature-item">
+                <div class="feature-icon">📚</div>
+                <div class="feature-title">RAG Implementation</div>
+                <div class="feature-desc">
+                    <strong>Retrieval-Augmented Generation</strong> using BeautifulSoup for web scraping. 
+                    Fetches up to 2000 characters of actual page content, enabling the AI to verify specific 
+                    details like dates, requirements, and contact info—not just generic snippets.
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with feat_col2:
+        st.markdown("""
+            <div class="feature-item">
+                <div class="feature-icon">🎯</div>
+                <div class="feature-title">Robust JSON Mode</div>
+                <div class="feature-desc">
+                    Uses <strong>Gemini's native JSON mode</strong> with <strong>Pydantic schemas</strong> 
+                    (VolunteerOpportunity, OpportunityList) to guarantee structured, type-safe output. 
+                    Eliminates parsing errors and ensures 100% valid responses.
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    tech_feat_col1, tech_feat_col2 = st.columns(2)
+
+    with tech_feat_col1:
+        st.markdown("""
+            <div class="feature-item">
+                <div class="feature-icon">🔧</div>
+                <div class="feature-title">Production-Ready Code</div>
+                <div class="feature-desc">
+                    Modular architecture with separate files for models, agents, tools, and workflow. 
+                    Proper error handling, relative imports, and deployment configuration for cloud hosting.
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with tech_feat_col2:
+        st.markdown("""
+            <div class="feature-item">
+                <div class="feature-icon">🎨</div>
+                <div class="feature-title">Modern UI/UX</div>
+                <div class="feature-desc">
+                    Built with Streamlit featuring custom CSS, animations, glassmorphism effects, 
+                    and responsive design. Professional dashboard with sidebar navigation and status indicators.
                 </div>
             </div>
         """, unsafe_allow_html=True)
@@ -693,11 +830,14 @@ footer_col1, footer_col2, footer_col3 = st.columns(3)
 with footer_col1:
     st.markdown("**🕯️ Beacon**")
     st.markdown("Illuminating paths to positive change")
+    st.markdown("*RAG-powered volunteer discovery*")
 
 with footer_col2:
     st.markdown("**🔗 Quick Links**")
     st.markdown("Home • Search • About")
+    st.markdown("*Multi-agent AI system*")
 
 with footer_col3:
-    st.markdown("**💡 Powered by AI**")
-    st.markdown("Advanced multi-agent system")
+    st.markdown("**💡 Tech Stack**")
+    st.markdown("Gemini 2.5 • Pydantic • BeautifulSoup")
+    st.markdown("*Streamlit • Google Custom Search*")

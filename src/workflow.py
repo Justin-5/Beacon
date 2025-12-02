@@ -1,4 +1,4 @@
-from .agents import call_llm_agent, RESEARCH_PROMPT, FILTER_PROMPT, FORMAT_PROMPT
+from .agents import call_llm_agent, call_filter_agent, RESEARCH_PROMPT, FORMAT_PROMPT
 from .tools import search_volunteer_sites
 import json
 
@@ -11,12 +11,11 @@ def run_volunteer_agent_flow(user_request: str):
     print(f"--- Starting Agent Flow for: '{user_request}' ---")
 
     # 1. Initialize the Session State
-    # This dictionary holds the memory for this single run
     session_state = {
         "user_request": user_request,
         "search_query": "",
         "raw_search_results": [],
-        "vetted_opportunities_str": "[]",  # Store as string
+        "vetted_opportunities": [],  # [CHANGE] Now stores a real List, not a string
         "final_response": ""
     }
 
@@ -26,32 +25,37 @@ def run_volunteer_agent_flow(user_request: str):
         RESEARCH_PROMPT,
         user_request=session_state["user_request"]
     )
+
     if session_state["search_query"] == "LLM_AGENT_ERROR":
         print("Error: Agent 1 (ResearchAgent) failed.")
         return "I'm sorry, I had an error processing your request. Please try again."
 
-    # 3. Run the Custom Tool
+    # 3. Run the Custom Tool (Now includes RAG Scraping)
     session_state["raw_search_results"] = search_volunteer_sites(
         session_state["search_query"]
     )
 
-    # 4. Run Agent 2: FilterAgent
+    # 4. Run Agent 2: FilterAgent (The New RAG Agent)
     print("--- 🤖 Agent 2: FilterAgent is thinking... ---")
-    session_state["vetted_opportunities_str"] = call_llm_agent(
-        FILTER_PROMPT,
-        search_results=session_state["raw_search_results"]
+
+    # [CHANGE] We call the specialized function that handles JSON & RAG
+    # We do NOT pass a prompt template anymore.
+    session_state["vetted_opportunities"] = call_filter_agent(
+        session_state["raw_search_results"]
     )
 
     # 5. Run Agent 3: FormatAgent
     print("--- 🤖 Agent 3: FormatAgent is thinking... ---")
+
+    # We pass the structured list to the formatter
     session_state["final_response"] = call_llm_agent(
         FORMAT_PROMPT,
-        vetted_list=session_state["vetted_opportunities_str"]
+        vetted_list=session_state["vetted_opportunities"]
     )
+
     if session_state["final_response"] == "LLM_AGENT_ERROR":
         print("Error: Agent 3 (FormatAgent) failed.")
-        # Return the raw data so the user at least sees something
-        return "I'm sorry, I had an error formatting the results. Here is the raw data: " + session_state["vetted_opportunities_str"]
+        return "I'm sorry, I had an error formatting the results."
 
     # 6. Return the final answer
     print("--- ✅ Agent Flow Complete ---")

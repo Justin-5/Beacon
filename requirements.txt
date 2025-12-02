@@ -6,3 +6,6 @@ watchdog
 streamlit-option-menu
 streamlit-shadcn-ui
 streamlit-extras
+pydantic
+beautifulsoup4
+requests

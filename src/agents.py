@@ -1,15 +1,17 @@
 import os
+import json
 import google.generativeai as genai
 from dotenv import load_dotenv
+from .models import OpportunityList
 
 # Load API key and configure the Gemini model
 load_dotenv()
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-# Create the model
+# Create the generic model for text tasks
 model = genai.GenerativeModel('gemini-2.5-flash-lite')
 
-# --- Define the prompts for our 3 agents ---
+# --- Prompts ---
 
 RESEARCH_PROMPT = """
 You are a research assistant. Your single job is to convert the user's request into a highly effective Google search query.
@@ -18,23 +20,6 @@ Do not add any explanation or conversational text. Output *only* the final searc
 
 User Request: {user_request}
 Search Query:
-"""
-
-FILTER_PROMPT = """
-You are a filtering analyst. You will be given a list of raw Google search results.
-Your job is to read the snippets and extract *only* the actionable volunteer opportunities.
-Ignore any links that are primarily about donations, news, blogs, or "about us" pages.
-For each valid opportunity, extract its title, a 1-sentence summary, and the URL.
-
-Format your output as a clean Python list of dictionaries:
-[
-  {"title": "Opportunity Title", "summary": "...", "url": "..."},
-  {"title": "Another Opportunity", "summary": "...", "url": "..."}
-]
-If no results are relevant, output an empty list: []
-
-Search Results:
-{search_results}
 """
 
 FORMAT_PROMPT = """
@@ -47,44 +32,72 @@ Vetted List:
 {vetted_list}
 """
 
+# --- Functions ---
+
 
 def call_llm_agent(prompt_template: str, **kwargs) -> str:
     """
-    A helper function to call the LLM agent
-    with a specific prompt and input.
+    Standard helper for ResearchAgent and FormatAgent.
+    Returns plain text.
     """
     try:
-        # --- NEW ROBUST FIX ---
-        # We will manually build the prompt to avoid .format() errors
-        # from data that contains curly braces.
-
         prompt = prompt_template
 
-        # Manually replace the keys in the template
+        # Simple manual replacement to avoid string formatting issues
         if "user_request" in kwargs:
             prompt = prompt.replace(
                 "{user_request}", str(kwargs["user_request"]))
 
-        if "search_results" in kwargs:
-            # We must import json to handle the data as a clean string
-            import json
-            prompt = prompt.replace(
-                "{search_results}", json.dumps(kwargs["search_results"]))
-
         if "vetted_list" in kwargs:
+            # Convert the list of objects back to string for the formatter
             prompt = prompt.replace(
                 "{vetted_list}", str(kwargs["vetted_list"]))
-
-        # --- END OF FIX ---
 
         response = model.generate_content(prompt)
         return response.text.strip()
 
     except Exception as e:
-        print(f"Error calling LLM: {e}")
+        print(f"Error calling LLM (Text Mode): {e}")
+        return "LLM_AGENT_ERROR"
 
-        # Check which prompt failed to give a safe fallback
-        if "FILTER_PROMPT" in prompt_template:
-            return "[]"  # Return an empty list for the filter agent
-        else:
-            return "LLM_AGENT_ERROR"  # Return a token for other agents
+
+def call_filter_agent(search_results: list[dict]) -> dict:
+    """
+    Specialized helper for FilterAgent.
+    Uses 'full_text' for RAG and enforces Pydantic JSON output.
+    """
+    # 1. Configure a specialized model for JSON mode
+    generation_config = genai.GenerationConfig(
+        response_mime_type="application/json",
+        response_schema=OpportunityList
+    )
+
+    json_model = genai.GenerativeModel(
+        'gemini-2.5-flash-lite',
+        generation_config=generation_config
+    )
+
+    # 2. RAG Prompt: Explicitly asks to read the scraped text
+    prompt = f"""
+    You are a filtering analyst. You have been given search results that include the scraped 'full_text' of the websites.
+    
+    Your Task:
+    1. Read the 'full_text' of each result to verify if it is a legitimate volunteer opportunity.
+    2. IGNORE general 'About Us' pages, donation pages, or blogs that don't list specific roles.
+    3. Extract the title, organization, location, and a summary for valid matches.
+    
+    Search Results:
+    {json.dumps(search_results)}
+    """
+
+    try:
+        # 3. Generate and parse
+        response = json_model.generate_content(prompt)
+
+        # Because we used response_schema, this text is guaranteed to be valid JSON
+        return json.loads(response.text)
+
+    except Exception as e:
+        print(f"Error calling Filter Agent: {e}")
+        # Return an empty list matching the expected structure
+        return {"items": []}
