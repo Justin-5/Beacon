@@ -9,3 +9,6 @@ streamlit-extras
 pydantic
 beautifulsoup4
 requests
+fastapi
+uvicorn[standard]
+supabase
