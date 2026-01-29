@@ -13,6 +13,13 @@ class VolunteerOpportunity(BaseModel):
         description="A 1-sentence summary of what the volunteer will do"
     )
     url: str = Field(description="The direct link to apply or read more")
+    full_text: Optional[str] = Field(
+        default=None,
+        description=(
+            "The noisy, scraped full text for this role, used by the "
+            "Contextual Inquiry Agent for grounded Q&A."
+        ),
+    )
 
 
 class OpportunityList(BaseModel):
@@ -84,4 +91,3 @@ class SaveRequest(BaseModel):
     opportunity: VolunteerOpportunity = Field(
         description="The volunteer opportunity the user wants to save."
     )
-

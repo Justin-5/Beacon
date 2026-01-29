@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from typing import List
+
+from fastapi import APIRouter, HTTPException, Query
 from fastapi import status
 
 from ..schemas.models import (
@@ -7,12 +9,13 @@ from ..schemas.models import (
     ChatRequest,
     ChatResponse,
     SaveRequest,
+    VolunteerOpportunity,
 )
 from ..services.agents import (
     run_volunteer_agent_flow_async,
     run_inquiry_agent_async,
 )
-from ..services.db import save_opportunity_to_db
+from ..services.db import get_saved_roles, save_opportunity_to_db
 
 
 router = APIRouter()
@@ -91,3 +94,26 @@ async def save_opportunity(payload: SaveRequest):
             detail=f"Failed to save opportunity: {exc}",
         ) from exc
 
+
+@router.get(
+    "/saved",
+    response_model=List[VolunteerOpportunity],
+    status_code=status.HTTP_200_OK,
+    summary="Fetch all saved volunteer opportunities for a user.",
+)
+async def get_saved_opportunities(
+    user_id: str = Query(
+        ...,
+        description="The unique identifier for the user whose saved opportunities should be returned.",
+    ),
+):
+    """
+    Return all saved volunteer opportunities for the given user.
+    """
+    try:
+        return await get_saved_roles(user_id=user_id)
+    except Exception as exc:  # pragma: no cover - defensive
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch saved opportunities: {exc}",
+        ) from exc

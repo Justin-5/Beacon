@@ -1,6 +1,6 @@
 import os
 import asyncio
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from dotenv import load_dotenv
 from supabase import create_client
@@ -71,3 +71,48 @@ async def save_opportunity_to_db(
     # Return whatever Supabase returned so callers can inspect if needed.
     return data or payload
 
+
+async def get_saved_roles(user_id: str) -> List[VolunteerOpportunity]:
+    """
+    Fetch all saved volunteer opportunities for a given user.
+
+    Returns a list of `VolunteerOpportunity` instances to align with
+    the public API schema.
+    """
+    client = _get_supabase_client()
+
+    def _select():
+        return (
+            client.table("saved_opportunities")
+            .select("*")
+            .eq("user_id", user_id)
+            .execute()
+        )
+
+    response = await asyncio.to_thread(_select)
+
+    error = getattr(response, "error", None)
+    if error:
+        raise RuntimeError(f"Supabase select failed: {error}")
+
+    rows = getattr(response, "data", []) or []
+
+    opportunities: List[VolunteerOpportunity] = []
+    for row in rows:
+        # Map only the fields defined on VolunteerOpportunity
+        try:
+            opportunities.append(
+                VolunteerOpportunity(
+                    title=row.get("title", ""),
+                    organization=row.get("organization", ""),
+                    location=row.get("location", ""),
+                    summary=row.get("summary", ""),
+                    url=row.get("url", ""),
+                    full_text=row.get("full_text", ""),
+                )
+            )
+        except Exception:
+            # Skip any malformed row rather than failing the whole request
+            continue
+
+    return opportunities

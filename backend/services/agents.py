@@ -183,8 +183,35 @@ async def run_volunteer_agent_flow_async(user_request: str):
     # 3. FilterAgent (RAG + JSON mode)
     print("--- 🤖 Agent 2: FilterAgent is thinking... ---")
     vetted_raw = await call_filter_agent(session_state["raw_search_results"])
+
     # Normalize into OpportunityList Pydantic model
-    session_state["vetted_opportunities"] = OpportunityList(**vetted_raw)
+    vetted_opportunities = OpportunityList(**vetted_raw)
+
+    # 🔁 Ensure `full_text` from the original search results is preserved.
+    # The LLM may drop this field when producing the structured list, so we
+    # stitch it back in by matching on URL (preferred) or title.
+    search_results = session_state["raw_search_results"]
+    for item in vetted_opportunities.items:
+        matched_full_text = None
+
+        # Prefer URL-based matching first (LLM `url` should mirror `link`).
+        if item.url:
+            for result in search_results:
+                if result.get("link") == item.url:
+                    matched_full_text = result.get("full_text")
+                    break
+
+        # Fallback: match by title if URL match not found.
+        if matched_full_text is None and item.title:
+            for result in search_results:
+                if result.get("title") == item.title:
+                    matched_full_text = result.get("full_text")
+                    break
+
+        if matched_full_text is not None:
+            item.full_text = matched_full_text
+
+    session_state["vetted_opportunities"] = vetted_opportunities
 
     # 4. FormatAgent
     print("--- 🤖 Agent 3: FormatAgent is thinking... ---")
@@ -240,4 +267,3 @@ async def run_inquiry_agent_async(
         raise RuntimeError("InquiryAgent failed to generate a response.")
 
     return answer
-
