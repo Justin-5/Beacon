@@ -17,7 +17,7 @@ export type ChatOpportunity = {
   location: string;
   summary: string;
   url: string;
-  full_text?: string;
+  full_text?: string | null;
 };
 
 type ChatDrawerProps = {

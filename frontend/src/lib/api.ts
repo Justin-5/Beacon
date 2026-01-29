@@ -1,6 +1,7 @@
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
 
 type VolunteerOpportunity = {
+  id?: string;
   title: string;
   organization: string;
   location: string;

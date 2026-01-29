@@ -185,7 +185,11 @@ async def run_volunteer_agent_flow_async(user_request: str):
     vetted_raw = await call_filter_agent(session_state["raw_search_results"])
 
     # Normalize into OpportunityList Pydantic model
-    vetted_opportunities = OpportunityList(**vetted_raw)
+    try:
+        vetted_opportunities = OpportunityList(**vetted_raw)
+    except Exception as e:
+        print(f"Validation Error in FilterAgent: {e}")
+        vetted_opportunities = OpportunityList(items=[])
 
     # 🔁 Ensure `full_text` from the original search results is preserved.
     # The LLM may drop this field when producing the structured list, so we

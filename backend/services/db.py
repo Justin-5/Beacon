@@ -103,6 +103,7 @@ async def get_saved_roles(user_id: str) -> List[VolunteerOpportunity]:
         try:
             opportunities.append(
                 VolunteerOpportunity(
+                    id=str(row.get("id", "")),
                     title=row.get("title", ""),
                     organization=row.get("organization", ""),
                     location=row.get("location", ""),

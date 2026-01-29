@@ -6,20 +6,20 @@ from pydantic import BaseModel, Field
 
 
 class VolunteerOpportunity(BaseModel):
-    title: str = Field(description="The title of the volunteer role")
-    organization: str = Field(description="Name of the NGO or group")
-    location: str = Field(description="City or specific location")
-    summary: str = Field(
-        description="A 1-sentence summary of what the volunteer will do"
-    )
-    url: str = Field(description="The direct link to apply or read more")
+    id: Optional[str] = Field(
+        default=None, description="Unique ID from database")
+    title: str = Field(default="Untitled Role",
+                       description="The title of the volunteer role")
+    organization: str = Field(
+        default="Unknown Organization", description="Name of the NGO or group")
+    location: str = Field(default="Remote/Unspecified",
+                          description="City or specific location")
+    summary: str = Field(default="No summary available.",
+                         description="A 1-sentence summary")
+    url: str = Field(
+        default="", description="The direct link to apply or read more")
     full_text: Optional[str] = Field(
-        default=None,
-        description=(
-            "The noisy, scraped full text for this role, used by the "
-            "Contextual Inquiry Agent for grounded Q&A."
-        ),
-    )
+        default=None, description="Scraped content for RAG")
 
 
 class OpportunityList(BaseModel):

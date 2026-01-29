@@ -29,17 +29,14 @@ export default function DashboardPage() {
     setError(null);
 
     getSavedRoles(user.id)
-      .then((roles: SavedOpportunity[]) => {
+      .then((roles) => {
         if (isCancelled) return;
-        const mapped: SavedOpportunity[] = roles.map(
-          (role: SavedOpportunity) => ({
-            ...role,
-          }),
-        );
-        setOpportunities(mapped);
+        // Direct assignment now works because we updated the type in api.ts
+        setOpportunities(roles);
       })
       .catch((err: any) => {
         if (isCancelled) return;
+        console.error("Dashboard Load Error:", err); // Added console log for debugging
         setError(err?.message ?? "Failed to load saved opportunities.");
       })
       .finally(() => {
