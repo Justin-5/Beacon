@@ -1,53 +1,72 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { SignedIn, SignedOut, SignInButton, useUser } from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignInButton, useAuth } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
-import { getSavedRoles } from "@/lib/api";
+import { deleteSavedRole, getSavedRoles } from "@/lib/api";
 import { ChatDrawer, type ChatOpportunity } from "@/components/ChatDrawer";
 import { OpportunityCard } from "@/components/OpportunityCard";
 
 type SavedOpportunity = ChatOpportunity;
 
+type SavedState = {
+  userId: string;
+  opportunities: SavedOpportunity[];
+  error: string | null;
+};
+
 export default function DashboardPage() {
-  const { user, isLoaded, isSignedIn } = useUser();
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [opportunities, setOpportunities] = useState<SavedOpportunity[]>([]);
+  const { isLoaded, isSignedIn, userId, getToken } = useAuth();
+  const [saved, setSaved] = useState<SavedState | null>(null);
   const [selectedOpportunity, setSelectedOpportunity] =
     useState<SavedOpportunity | null>(null);
 
   useEffect(() => {
-    if (!isLoaded) return;
-    if (!isSignedIn || !user?.id) {
-      setIsLoading(false);
-      return;
-    }
+    if (!isLoaded || !isSignedIn || !userId) return;
 
     let isCancelled = false;
-    setIsLoading(true);
-    setError(null);
-
-    getSavedRoles(user.id)
+    getToken()
+      .then(getSavedRoles)
       .then((roles) => {
-        if (isCancelled) return;
-        // Direct assignment now works because we updated the type in api.ts
-        setOpportunities(roles);
+        if (!isCancelled) setSaved({ userId, opportunities: roles, error: null });
       })
-      .catch((err: any) => {
+      .catch((err: unknown) => {
         if (isCancelled) return;
-        console.error("Dashboard Load Error:", err); // Added console log for debugging
-        setError(err?.message ?? "Failed to load saved opportunities.");
-      })
-      .finally(() => {
-        if (isCancelled) return;
-        setIsLoading(false);
+        setSaved({
+          userId,
+          opportunities: [],
+          error:
+            err instanceof Error
+              ? err.message
+              : "Failed to load saved opportunities.",
+        });
       });
 
     return () => {
       isCancelled = true;
     };
-  }, [isLoaded, isSignedIn, user?.id]);
+  }, [isLoaded, isSignedIn, userId, getToken]);
+
+  // State is keyed by user, so loading is derived instead of tracked.
+  const current = saved?.userId === userId ? saved : null;
+  const isLoading = !current;
+  const error = current?.error ?? null;
+  const opportunities = current?.opportunities ?? [];
+
+  const handleUnsave = async (opportunity: SavedOpportunity) => {
+    if (!opportunity.id || !current) return;
+    // Optimistic removal; restore the list if the request fails.
+    setSaved({
+      ...current,
+      opportunities: opportunities.filter((o) => o.id !== opportunity.id),
+    });
+    try {
+      await deleteSavedRole(await getToken(), opportunity.id);
+    } catch (err: unknown) {
+      setSaved(current);
+      window.alert(err instanceof Error ? err.message : "Failed to remove role.");
+    }
+  };
 
   const handleChatOpen = (opportunity: SavedOpportunity) => {
     setSelectedOpportunity(opportunity);
@@ -115,6 +134,7 @@ export default function DashboardPage() {
                     key={`${opportunity.id ?? opportunity.url}-${index}`}
                     opportunity={opportunity}
                     onChatClick={handleChatOpen}
+                    onSave={handleUnsave}
                     isSaved
                   />
                 ))}

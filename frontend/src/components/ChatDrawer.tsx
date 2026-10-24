@@ -61,14 +61,14 @@ export function ChatDrawer({ isOpen, onClose, opportunity }: ChatDrawerProps) {
       setMessages(nextMessages);
       setIsLoading(true);
 
-      const historyPayload = nextMessages.map((m) => ({
+      // Prior turns only (the new question is sent as `user_query`), capped to the API limit.
+      const historyPayload = messages.slice(-20).map((m) => ({
         role: m.role,
         content: m.content,
       }));
 
       try {
         const response = await chatWithRole(
-          opportunity.id ?? "",
           opportunity.full_text ?? opportunity.summary ?? "",
           content,
           historyPayload,
@@ -80,13 +80,14 @@ export function ChatDrawer({ isOpen, onClose, opportunity }: ChatDrawerProps) {
           content: response.answer,
         };
         setMessages((prev) => [...prev, botMessage]);
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage: ChatMessage = {
           id: `${Date.now()}-error`,
           role: "assistant",
           content:
-            error?.message ??
-            "Sorry, something went wrong while fetching a response.",
+            error instanceof Error
+              ? error.message
+              : "Sorry, something went wrong while fetching a response.",
         };
         setMessages((prev) => [...prev, errorMessage]);
       } finally {

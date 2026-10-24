@@ -1,60 +1,79 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { searchOpportunities, saveRole } from "@/lib/api";
 import { ChatDrawer, type ChatOpportunity } from "@/components/ChatDrawer";
 import { OpportunityCard } from "@/components/OpportunityCard";
-import { useUser } from "@clerk/nextjs";
+import { useAuth, useClerk } from "@clerk/nextjs";
 
 type SearchOpportunity = ChatOpportunity;
 
+type SearchResult = {
+  query: string;
+  searchQuery: string;
+  opportunities: SearchOpportunity[];
+  error: string | null;
+};
+
 export default function SearchPage() {
-  const { user, isSignedIn } = useUser();
+  // useSearchParams needs a Suspense boundary for the static build.
+  return (
+    <Suspense>
+      <SearchResults />
+    </Suspense>
+  );
+}
+
+function SearchResults() {
+  const { isSignedIn, getToken } = useAuth();
+  const { openSignIn } = useClerk();
   const searchParams = useSearchParams();
   const query = searchParams.get("q") ?? "";
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [opportunities, setOpportunities] = useState<SearchOpportunity[]>([]);
+  const [result, setResult] = useState<SearchResult | null>(null);
   const [selectedOpportunity, setSelectedOpportunity] =
     useState<SearchOpportunity | null>(null);
   const [savedUrls, setSavedUrls] = useState<Set<string>>(new Set());
 
-  const hasQuery = useMemo(() => query.trim().length > 0, [query]);
+  const hasQuery = query.trim().length > 0;
 
   useEffect(() => {
-    if (!hasQuery) {
-      setOpportunities([]);
-      return;
-    }
+    if (!hasQuery) return;
 
     let isCancelled = false;
-    setIsLoading(true);
-    setError(null);
-
     searchOpportunities(query)
       .then((res) => {
         if (isCancelled) return;
-        const mapped: SearchOpportunity[] = res.opportunities.map((opp) => ({
-          ...opp,
-        }));
-        setOpportunities(mapped);
+        setResult({
+          query,
+          searchQuery: res.search_query,
+          opportunities: res.opportunities,
+          error: null,
+        });
       })
-      .catch((err: any) => {
+      .catch((err: unknown) => {
         if (isCancelled) return;
-        setError(err?.message ?? "Failed to load opportunities.");
-      })
-      .finally(() => {
-        if (isCancelled) return;
-        setIsLoading(false);
+        setResult({
+          query,
+          searchQuery: "",
+          opportunities: [],
+          error: err instanceof Error ? err.message : "Failed to load opportunities.",
+        });
       });
 
     return () => {
       isCancelled = true;
     };
   }, [hasQuery, query]);
+
+  // Results are keyed by query, so loading is derived instead of tracked.
+  const current = hasQuery && result?.query === query ? result : null;
+  const isLoading = hasQuery && !current;
+  const error = current?.error ?? null;
+  const opportunities = current?.opportunities ?? [];
+  const searchQuery = current?.searchQuery ?? "";
 
   const handleChatOpen = (opportunity: SearchOpportunity) => {
     setSelectedOpportunity(opportunity);
@@ -65,25 +84,17 @@ export default function SearchPage() {
   };
 
   const handleSave = async (opportunity: SearchOpportunity) => {
-    if (!isSignedIn || !user?.id) {
-      window.alert("Please sign in to save.");
+    if (!isSignedIn) {
+      openSignIn();
       return;
     }
+    if (savedUrls.has(opportunity.url)) return;
 
     try {
-      await saveRole(user.id, {
-        title: opportunity.title,
-        organization: opportunity.organization,
-        location: opportunity.location,
-        summary: opportunity.summary,
-        url: opportunity.url,
-        full_text: opportunity.full_text ?? undefined,
-      });
-
+      await saveRole(await getToken(), opportunity);
       setSavedUrls((prev) => new Set(prev).add(opportunity.url));
-      window.alert("Role Saved!");
-    } catch (err: any) {
-      window.alert(err?.message ?? "Failed to save role.");
+    } catch (err: unknown) {
+      window.alert(err instanceof Error ? err.message : "Failed to save role.");
     }
   };
 
@@ -106,6 +117,11 @@ export default function SearchPage() {
                   “{query.trim()}”
                 </span>
                 .
+              </p>
+            )}
+            {searchQuery && !isLoading && (
+              <p className="mt-1 font-mono text-xs text-slate-500">
+                ResearchAgent searched: {searchQuery}
               </p>
             )}
             {!hasQuery && (

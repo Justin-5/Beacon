@@ -1,14 +1,8 @@
 python-dotenv
-google-api-python-client
-google-generativeai
-streamlit
-watchdog
-streamlit-option-menu
-streamlit-shadcn-ui
-streamlit-extras
-pydantic
+google-genai
 beautifulsoup4
 requests
 fastapi
 uvicorn[standard]
 supabase
+pyjwt[crypto]

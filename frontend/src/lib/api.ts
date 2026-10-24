@@ -1,6 +1,6 @@
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
 
-type VolunteerOpportunity = {
+export type VolunteerOpportunity = {
   id?: string;
   title: string;
   organization: string;
@@ -11,7 +11,7 @@ type VolunteerOpportunity = {
 };
 
 type SearchResponse = {
-  message: string;
+  search_query: string;
   opportunities: VolunteerOpportunity[];
 };
 
@@ -24,113 +24,84 @@ type ChatResponse = {
   answer: string;
 };
 
-type SaveResponse = {
-  success: boolean;
-};
+async function request<T>(
+  path: string,
+  init: RequestInit & { token?: string | null } = {}
+): Promise<T> {
+  const { token, ...rest } = init;
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    ...rest,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
 
-type SavedRolesResponse = VolunteerOpportunity[];
+  if (res.status === 204) return undefined as T;
 
-function getApiUrl(path: string): string {
-  const base = API_BASE_URL || "";
-  const normalizedBase = base ? base.replace(/\/+$/, "") : "";
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return `${normalizedBase}${normalizedPath}`;
-}
-
-async function handleResponse<T>(res: Response): Promise<T> {
-  let data: unknown;
   const text = await res.text();
-
+  let data: { detail?: string | { msg: string }[] } | null = null;
   try {
     data = text ? JSON.parse(text) : null;
   } catch {
-    // Non-JSON response
-    throw new Error(
-      res.ok
-        ? "Unexpected response format from server."
-        : `Request failed with status ${res.status}`
-    );
+    // Non-JSON response; fall through to the status-based message.
   }
 
   if (!res.ok) {
-    const message =
-      (data as any)?.detail ??
-      (data as any)?.message ??
-      `Request failed with status ${res.status}`;
-    throw new Error(message);
+    const detail = data?.detail;
+    // FastAPI validation errors come back as a list of {msg} objects.
+    const message = Array.isArray(detail) ? detail[0]?.msg : detail;
+    throw new Error(message ?? `Request failed with status ${res.status}`);
   }
 
   return data as T;
 }
 
-export async function searchOpportunities(
-  query: string
-): Promise<SearchResponse> {
-  const res = await fetch(getApiUrl("/api/search"), {
+export function searchOpportunities(query: string): Promise<SearchResponse> {
+  return request("/api/search", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      user_request: query,
-    }),
+    body: JSON.stringify({ user_request: query }),
   });
-
-  return handleResponse<SearchResponse>(res);
 }
 
-export async function chatWithRole(
-  opportunityId: string,
+export function chatWithRole(
   fullText: string,
   message: string,
   history: ChatMessage[]
 ): Promise<ChatResponse> {
-  const res = await fetch(getApiUrl("/api/chat"), {
+  return request("/api/chat", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
     body: JSON.stringify({
-      opportunity_id: opportunityId,
       full_text: fullText,
       user_query: message,
       chat_history: history,
     }),
   });
-
-  return handleResponse<ChatResponse>(res);
 }
 
-export async function saveRole(
-  userId: string,
+export function saveRole(
+  token: string | null,
   opportunity: VolunteerOpportunity
-): Promise<SaveResponse> {
-  const res = await fetch(getApiUrl("/api/save"), {
+): Promise<{ success: boolean }> {
+  return request("/api/saved", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      user_id: userId,
-      opportunity,
-    }),
+    token,
+    body: JSON.stringify(opportunity),
   });
-
-  return handleResponse<SaveResponse>(res);
 }
 
-export async function getSavedRoles(
-  userId: string
-): Promise<SavedRolesResponse> {
-  const url = getApiUrl(`/api/saved?user_id=${encodeURIComponent(userId)}`);
-
-  const res = await fetch(url, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  return handleResponse<SavedRolesResponse>(res);
+export function getSavedRoles(
+  token: string | null
+): Promise<VolunteerOpportunity[]> {
+  return request("/api/saved", { token });
 }
 
+export function deleteSavedRole(
+  token: string | null,
+  id: string
+): Promise<void> {
+  return request(`/api/saved/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    token,
+  });
+}
